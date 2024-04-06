@@ -18,7 +18,6 @@ extern "C" {
 void j_Animation(lv_obj_t * TargetObject, int delay);
 // SCREEN: ui_TrumaMainScreen
 void ui_TrumaMainScreen_screen_init(void);
-void ui_event_TrumaMainScreen(lv_event_t * e);
 extern lv_obj_t * ui_TrumaMainScreen;
 extern lv_obj_t * ui_Label1;
 extern lv_obj_t * ui_Temp;

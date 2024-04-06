@@ -12,7 +12,6 @@ void j_Animation(lv_obj_t * TargetObject, int delay);
 
 // SCREEN: ui_TrumaMainScreen
 void ui_TrumaMainScreen_screen_init(void);
-void ui_event_TrumaMainScreen(lv_event_t * e);
 lv_obj_t * ui_TrumaMainScreen;
 lv_obj_t * ui_Label1;
 lv_obj_t * ui_Temp;
@@ -69,14 +68,6 @@ void j_Animation(lv_obj_t * TargetObject, int delay)
 }
 
 ///////////////////// FUNCTIONS ////////////////////
-void ui_event_TrumaMainScreen(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_CLICKED) {
-        ResetError(e);
-    }
-}
 void ui_event_Heating(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);

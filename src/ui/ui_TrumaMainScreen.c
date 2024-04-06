@@ -281,6 +281,5 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_add_event_cb(ui_Button1, ui_event_Button1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Button2, ui_event_Button2, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_ResetButton, ui_event_ResetButton, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_TrumaMainScreen, ui_event_TrumaMainScreen, LV_EVENT_ALL, NULL);
 
 }

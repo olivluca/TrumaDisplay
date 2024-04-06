@@ -10,12 +10,12 @@
 extern "C" {
 #endif
 
-void ResetError(lv_event_t * e);
 void HeatingOn(lv_event_t * e);
 void WaterChanged(lv_event_t * e);
 void FanChanged(lv_event_t * e);
 void DecrTemperature(lv_event_t * e);
 void IncrTemperature(lv_event_t * e);
+void ResetError(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/
