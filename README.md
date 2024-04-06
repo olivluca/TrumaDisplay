@@ -5,10 +5,10 @@ Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display).
 
 It's an mqtt client using the topics made available by
 [TruMinus](https://github.com/olivluca/TruMinus) and uses the
-(esp32-smartdisplay)[https://github.com/rzeldent/esp32-smartdisplay]
+[esp32-smartdisplay](https://github.com/rzeldent/esp32-smartdisplay)
 library.
 
-The UI has been generated with (Squareline studio)[https://squareline.io/].
+The UI has been generated with [Squareline studio](https://squareline.io/).
 
 This software is not provided, endorsed, supported, or sponsored by Truma. It may or may not be working with their products. 
 Please read the [license file](LICENSE), in particular:
