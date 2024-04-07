@@ -275,6 +275,17 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_label_set_text(ui_Window, "---");
     lv_obj_set_style_text_font(ui_Window, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_ScreenOff = lv_checkbox_create(ui_TrumaMainScreen);
+    lv_checkbox_set_text(ui_ScreenOff, "Apagar pantalla inactiva");
+    lv_obj_set_height(ui_ScreenOff, 22);
+    lv_obj_set_width(ui_ScreenOff, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_x(ui_ScreenOff, -7);
+    lv_obj_set_y(ui_ScreenOff, 154);
+    lv_obj_set_align(ui_ScreenOff, LV_ALIGN_TOP_RIGHT);
+    lv_obj_add_state(ui_ScreenOff, LV_STATE_CHECKED);       /// States
+    lv_obj_add_flag(ui_ScreenOff, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_set_style_text_font(ui_ScreenOff, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lv_obj_add_event_cb(ui_Heating, ui_event_Heating, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Boiler, ui_event_Boiler, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Fan, ui_event_Fan, LV_EVENT_ALL, NULL);

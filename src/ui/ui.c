@@ -45,6 +45,7 @@ lv_obj_t * ui_RoomDemand;
 lv_obj_t * ui_WaterDemand;
 lv_obj_t * ui_Label10;
 lv_obj_t * ui_Window;
+lv_obj_t * ui_ScreenOff;
 
 
 // SCREEN: ui_ErrorScreen

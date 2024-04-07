@@ -51,6 +51,7 @@ extern lv_obj_t * ui_RoomDemand;
 extern lv_obj_t * ui_WaterDemand;
 extern lv_obj_t * ui_Label10;
 extern lv_obj_t * ui_Window;
+extern lv_obj_t * ui_ScreenOff;
 // SCREEN: ui_ErrorScreen
 void ui_ErrorScreen_screen_init(void);
 extern lv_obj_t * ui_ErrorScreen;

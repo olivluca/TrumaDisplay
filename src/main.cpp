@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <esp32_smartdisplay.h>
+#include <esp_lcd_panel_ops.h>
 #include <ui/ui.h>
 #include <ESP32MQTTClient.h>
 #include <WiFi.h>
 #include <type_traits>
+#include "errtext.h"
 
 //------ you should create your own wifi.h with
 //#define WLAN_SSID "your_ssid"
@@ -20,15 +22,20 @@ boolean linok=true;
 boolean doingreset=false;
 boolean showingError=false;
 boolean tempchanged=false;
-boolean resetenabled=false;
+boolean screenoff=false;
+boolean screenwasoff=false;
+String waterboost="0";
+int error=0;
+boolean screenchanged=false;
 
 unsigned long tempdelay;
+unsigned long refreshdelay;
 
 String BoilerValues[] = {"off","eco","high","boost"};
 String FanValues[] = {"off","eco","high","1","2","3","4","5","6","7","8","9","10"};
 
+
 void ShowResetButton(boolean show) {
-  resetenabled=show;
   if (show) {
     lv_obj_clear_flag(ui_ResetButton, LV_OBJ_FLAG_HIDDEN);
   } else {
@@ -36,40 +43,102 @@ void ShowResetButton(boolean show) {
   }
 }
 
+void ShowErrorOrWaterboost() {
+  String errmsg="";
+  if (error>0 && error<=255) {
+    errmsg=ErrText[error];
+  }
+  if (errmsg != "") {
+     lv_label_set_text(ui_Waterboost,errmsg.c_str());
+     lv_obj_set_style_text_color(ui_Waterboost, LV_COLOR_MAKE(255,0,0), 0);
+  } else if (waterboost=="1") {
+     lv_label_set_text(ui_Waterboost, "boost activo, queda 1 minuto");
+     lv_obj_set_style_text_color(ui_Waterboost, LV_COLOR_MAKE(0,0,0), 0);
+  } else if (waterboost!="0") {
+     String wbm="boost activo, quedan "+waterboost+" minutos";
+     lv_label_set_text(ui_Waterboost, wbm.c_str());
+     lv_obj_set_style_text_color(ui_Waterboost, LV_COLOR_MAKE(0,0,0), 0);
+  } else {
+    lv_label_set_text(ui_Waterboost, "");
+  }
+}
+
 void RequestRefresh() {
   mqttClient.publish("truma/set/refresh","1");
 }
 
-void ShowError() {
-  if (mqttok && linok && !doingreset) {
-    if (showingError) {
-      showingError=false;
-      lv_label_set_text(ui_RoomTemp,"---");
-      lv_label_set_text(ui_WaterTemp, "---");
-      lv_label_set_text(ui_Voltage, "---");
-      lv_obj_add_flag(ui_RoomDemand, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(ui_WaterDemand,LV_OBJ_FLAG_HIDDEN);
-      lv_label_set_text(ui_Window,"---");
-      lv_label_set_text(ui_ErrClass,"");
-      lv_label_set_text(ui_ErrCode,"");
-      lv_label_set_text(ui_Waterboost,"");
-      lv_scr_load(ui_TrumaMainScreen);
-      ShowResetButton(false);
-      RequestRefresh();
+/*
+The error screen is used either to show a status/error message
+or to change to a screen with no elements when there's no activity
+(so that when the user clicks on the screen generating activity
+it will not push any underlying button)
+*/
+void ShowErrorOrStatus() {
+  boolean error=!mqttok || !linok || doingreset;
+  if (error || screenoff) {
+    //only change screen if it wasn't already loaded
+    if (!showingError && !screenwasoff) {
+      Serial.println("Loading ErrorScreen");
+      lv_scr_load(ui_ErrorScreen);
+      screenchanged=true;
+      refreshdelay=millis();
     }
-    return;
-  }
-  if (!mqttok) {
-    lv_label_set_text(ui_ErrorLabel,"Conectando, espere...");
-  } else if (!linok) {
-    lv_label_set_text(ui_ErrorLabel,"Error lin bus");
+    screenwasoff=true; 
+    showingError=error; //store that it was an error
+    if (!mqttok) { //then display the error/status message
+      lv_label_set_text(ui_ErrorLabel,"Conectando, espere...");
+    } else if (!linok) {
+      lv_label_set_text(ui_ErrorLabel,"Error lin bus");
+    } else if (doingreset) {
+      lv_label_set_text(ui_ErrorLabel,"Reset error, espere...");
+    } else {
+      lv_label_set_text(ui_ErrorLabel,"");
+    }
   } else {
-    lv_label_set_text(ui_ErrorLabel,"Reset error, espere...");
+    //currently there's no error and the screen must be kept on
+    //clear the data if it was an error
+    if (showingError || screenwasoff) {
+      Serial.print("Loading normal screen ");
+      if (showingError) {
+        Serial.println("clearing data");
+        lv_label_set_text(ui_RoomTemp,"---");
+        lv_label_set_text(ui_WaterTemp, "---");
+        lv_label_set_text(ui_Voltage, "---");
+        lv_obj_add_flag(ui_RoomDemand, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_WaterDemand,LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_Window,"---");
+        lv_label_set_text(ui_ErrClass,"");
+        lv_label_set_text(ui_ErrCode,"");
+        lv_label_set_text(ui_Waterboost,"");
+        ShowResetButton(false);
+        RequestRefresh();
+      } else {
+        Serial.println("without clearing data");
+      }
+      //and load the normal screen
+      lv_scr_load(ui_TrumaMainScreen);
+      screenchanged=true;
+      refreshdelay=millis();
+      screenwasoff=false;
+      showingError=false;
+    }
   }
-  if (!showingError) {
-    showingError=true;
-    lv_scr_load(ui_ErrorScreen);
+}
+
+float BrightnessCallback() {
+  float adapt=smartdisplay_lcd_adaptive_brightness_cds();
+  if (lv_disp_get_inactive_time(lv_disp_get_default())>30000 && lv_obj_has_state(ui_ScreenOff, LV_STATE_CHECKED)) {
+    if (!screenoff) {
+      screenoff=true;
+      ShowErrorOrStatus();
+    }
+    return 0.0;
   }
+  if (screenoff) {
+    screenoff=false;
+    ShowErrorOrStatus();
+  }
+  return adapt;
 }
 
 void setup() {
@@ -78,6 +147,7 @@ void setup() {
    __attribute__((unused)) auto disp = lv_disp_get_default();
  lv_disp_set_rotation(disp, LV_DISP_ROT_90);
    ui_init();
+ smartdisplay_lcd_set_brightness_cb(BrightnessCallback, 100);  
  //starts the wifi (loop will check if it's connected)
   WiFi.mode(WIFI_STA);
   WiFi.begin(WLAN_SSID, WLAN_PASS);
@@ -88,7 +158,8 @@ void setup() {
   mqttClient.enableLastWillMessage("trumadisplay/lwt", "I am going offline");
   mqttClient.enableDebuggingMessages(false);
   mqttClient.loopStart();
-  ShowError();
+  ShowErrorOrStatus();
+  refreshdelay=millis();
 }
 
 
@@ -108,7 +179,13 @@ void SendTemperature() {
 }
 
 void loop() {
-  lv_timer_handler();
+
+  //hack to try and fix the missing redraws of the screen
+  
+  if(screenchanged && millis()-refreshdelay>500) {
+    screenchanged=false;
+    lv_obj_invalidate(lv_scr_act());
+  } 
 
   if (tempchanged) {
     if (millis()-tempdelay>1000) {
@@ -116,13 +193,14 @@ void loop() {
       SendTemperature();
     }
   }
+  lv_timer_handler();
 }
 
 /* mqtt handling */
 esp_err_t handleMQTT(esp_mqtt_event_handle_t event) {
   if (event->event_id==MQTT_EVENT_DISCONNECTED || event->event_id == MQTT_EVENT_ERROR) {
     mqttok=false;
-    ShowError();
+    ShowErrorOrStatus();
   } 
   mqttClient.onEventCallback(event);
   return ESP_OK;
@@ -131,7 +209,7 @@ esp_err_t handleMQTT(esp_mqtt_event_handle_t event) {
 // message received from the mqtt broker
 void callback(const String& topic, const String& payload) {
   mqttok=true;
-  ShowError();
+  ShowErrorOrStatus();
   Serial.print("Received mqtt message [");
   Serial.print(topic);
   Serial.print("] payload \"");
@@ -171,14 +249,8 @@ void callback(const String& topic, const String& payload) {
     }
   }
   else if (topic=="truma/status/waterboost") {
-    if (payload=="0") {
-      lv_label_set_text(ui_Waterboost,"");
-    } else if (payload=="1") {
-      lv_label_set_text(ui_Waterboost, "boost activo, queda 1 minuto"); 
-    } else {
-      String msg="boost activo, quedan "+payload+" minutos";
-      lv_label_set_text(ui_Waterboost, msg.c_str());
-    }
+    waterboost=payload;
+    ShowErrorOrWaterboost();
   }
   else if (topic=="truma/status/err_class") {
     boolean showbutton=false;
@@ -204,17 +276,20 @@ void callback(const String& topic, const String& payload) {
   else if (topic=="truma/status/err_code") {
     if (payload=="0") {
       lv_label_set_text(ui_ErrCode,"");
+      error=0;
     } else {
-      lv_label_set_text(ui_ErrCode, payload.c_str());
+      error=atoi(payload.c_str());
+      lv_label_set_text(ui_ErrCode,payload.c_str());
     }
+    ShowErrorOrWaterboost();
   }  
   else if (topic=="truma/status/linok") {
     linok=payload=="1";
-    ShowError();
+    ShowErrorOrStatus();
   }
   else if (topic=="truma/status/reset") {
     doingreset=payload=="1";
-    ShowError();
+    ShowErrorOrStatus();
   }
 
 
@@ -253,20 +328,14 @@ void onConnectionEstablishedCallback(esp_mqtt_client_handle_t client) {
   mqttok=true;
   linok=true;
   doingreset=false;
-  ShowError();
+  ShowErrorOrStatus();
   mqttClient.subscribe("truma/#", callback);
   RequestRefresh();
 }
 
-
 void ResetError(lv_event_t * e) {
-  Serial.print("Reset clicked");
-  if (!resetenabled) {
-    Serial.println(" ignored");
-  } else {
-    Serial.println("sending truma/set/error_reset");
-    mqttClient.publish("truma/set/error_reset","1");
-  }
+  Serial.println("Reset clicked, sending truma/set/error_reset");
+  mqttClient.publish("truma/set/error_reset","1");
 }
 
 void ChangeTemp(int increment) {
