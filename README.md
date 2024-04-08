@@ -1,6 +1,6 @@
 # CYD display for a truma combi D
 
-![screenshot](doc/screenshot.jpg)
+![screenshot](screenshot.jpg)
 
 It's a simple project to display and control a truma combi D with a [Cheap
 Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display).
