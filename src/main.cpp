@@ -24,45 +24,80 @@ boolean showingError=false;
 boolean tempchanged=false;
 boolean screenoff=false;
 boolean screenwasoff=false;
+boolean noheartbeat=false;
 String waterboost="0";
 int error=0;
-boolean screenchanged=false;
 
 unsigned long tempdelay;
 unsigned long refreshdelay;
+unsigned long lastheartbeat;
+
+boolean wifistarted=false;
+unsigned long lastwifi;
 
 String BoilerValues[] = {"off","eco","high","boost"};
 String FanValues[] = {"off","eco","high","1","2","3","4","5","6","7","8","9","10"};
 
-
-void ShowResetButton(boolean show) {
-  if (show) {
-    lv_obj_clear_flag(ui_ResetButton, LV_OBJ_FLAG_HIDDEN);
-  } else {
-    lv_obj_add_flag(ui_ResetButton, LV_OBJ_FLAG_HIDDEN);
+/* I don't know if strcmp is more costly that the mindless string 
+   reallocation done by lvgl, but changing the label when it isn't
+   really changing doesn't seem right to me 
+*/
+void SetLabelText(lv_obj_t * obj, const char * text) {
+  if (strcmp(text,lv_label_get_text(obj))!=0) {
+     lv_label_set_text(obj,text);
   }
 }
 
+//Only Shows/Hide an object if it's not already Shown/Hidden
+//I wonder why the library doesn't do this itself, I guess
+//that's how C/C++ people do things
+void Show(lv_obj_t * obj, boolean show) {
+  boolean shown=!lv_obj_has_flag(obj,LV_OBJ_FLAG_HIDDEN);
+  if (shown!=show) {
+    if (show) {
+      lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    }
+  }   
+}
+
+//Only sets the text color if it's  different
+void SetTextColor(lv_obj_t * obj, lv_color_t color) {
+  lv_color_t oldcolor=lv_obj_get_style_text_color(obj,0);
+  if (memcmp(&oldcolor,&color,sizeof(color))!=0) {
+    lv_obj_set_style_text_color(obj, color, 0);
+  }
+}
+
+//Uses the waterboost label to either show an error text
+//or the waterboost status
 void ShowErrorOrWaterboost() {
   String errmsg="";
   if (error>0 && error<=255) {
     errmsg=ErrText[error];
+    if (errmsg=="") {
+      errmsg="código de error desconocido";
+    }
   }
   if (errmsg != "") {
-     lv_label_set_text(ui_Waterboost,errmsg.c_str());
-     lv_obj_set_style_text_color(ui_Waterboost, LV_COLOR_MAKE(255,0,0), 0);
+     SetLabelText(ui_Waterboost,errmsg.c_str());
+     SetTextColor(ui_Waterboost, LV_COLOR_MAKE(255,0,0));
   } else if (waterboost=="1") {
-     lv_label_set_text(ui_Waterboost, "boost activo, queda 1 minuto");
-     lv_obj_set_style_text_color(ui_Waterboost, LV_COLOR_MAKE(0,0,0), 0);
+     SetLabelText(ui_Waterboost, "boost activo, queda 1 minuto");
+     SetTextColor(ui_Waterboost, LV_COLOR_MAKE(0,0,0));
   } else if (waterboost!="0") {
      String wbm="boost activo, quedan "+waterboost+" minutos";
-     lv_label_set_text(ui_Waterboost, wbm.c_str());
-     lv_obj_set_style_text_color(ui_Waterboost, LV_COLOR_MAKE(0,0,0), 0);
+     SetLabelText(ui_Waterboost, wbm.c_str());
+     SetTextColor(ui_Waterboost, LV_COLOR_MAKE(0,0,0));
   } else {
-    lv_label_set_text(ui_Waterboost, "");
+    SetLabelText(ui_Waterboost, "");
   }
 }
 
+//Forces a refresh of the data (TruMinus will send the
+//data as soon as it is received, without waiting for
+//a change or 10 seconds)
 void RequestRefresh() {
   mqttClient.publish("truma/set/refresh","1");
 }
@@ -74,25 +109,27 @@ or to change to a screen with no elements when there's no activity
 it will not push any underlying button)
 */
 void ShowErrorOrStatus() {
-  boolean error=!mqttok || !linok || doingreset;
+  boolean error=!wifistarted || !mqttok || !linok || doingreset || noheartbeat;
   if (error || screenoff) {
     //only change screen if it wasn't already loaded
     if (!showingError && !screenwasoff) {
       Serial.println("Loading ErrorScreen");
       lv_scr_load(ui_ErrorScreen);
-      screenchanged=true;
-      refreshdelay=millis();
     }
     screenwasoff=true; 
     showingError=error; //store that it was an error
-    if (!mqttok) { //then display the error/status message
-      lv_label_set_text(ui_ErrorLabel,"Conectando, espere...");
+    if (!wifistarted) {
+      SetLabelText(ui_ErrorLabel,"Conectando al wifi, espere...");
+    } else if (!mqttok) { //then display the error/status message
+      SetLabelText(ui_ErrorLabel,"Conectando al servidor, espere...");
+    } else if (noheartbeat ) {
+      SetLabelText(ui_ErrorLabel,"No se reciben datos (no heartbeat)"); 
     } else if (!linok) {
-      lv_label_set_text(ui_ErrorLabel,"Error lin bus");
+      SetLabelText(ui_ErrorLabel,"Error lin bus");
     } else if (doingreset) {
-      lv_label_set_text(ui_ErrorLabel,"Reset error, espere...");
+      SetLabelText(ui_ErrorLabel,"Reset error, espere...");
     } else {
-      lv_label_set_text(ui_ErrorLabel,"");
+      SetLabelText(ui_ErrorLabel,"");
     }
   } else {
     //currently there's no error and the screen must be kept on
@@ -101,30 +138,30 @@ void ShowErrorOrStatus() {
       Serial.print("Loading normal screen ");
       if (showingError) {
         Serial.println("clearing data");
-        lv_label_set_text(ui_RoomTemp,"---");
-        lv_label_set_text(ui_WaterTemp, "---");
-        lv_label_set_text(ui_Voltage, "---");
-        lv_obj_add_flag(ui_RoomDemand, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_WaterDemand,LV_OBJ_FLAG_HIDDEN);
-        lv_label_set_text(ui_Window,"---");
-        lv_label_set_text(ui_ErrClass,"");
-        lv_label_set_text(ui_ErrCode,"");
-        lv_label_set_text(ui_Waterboost,"");
-        ShowResetButton(false);
+        SetLabelText(ui_RoomTemp,"---");
+        SetLabelText(ui_WaterTemp, "---");
+        SetLabelText(ui_Voltage, "---");
+        Show(ui_RoomDemand, false);
+        Show(ui_WaterDemand,false);
+        SetLabelText(ui_Window,"---");
+        SetLabelText(ui_ErrClass,"");
+        SetLabelText(ui_ErrCode,"");
+        SetLabelText(ui_Waterboost,"");
+        Show(ui_ResetButton, false);
         RequestRefresh();
       } else {
         Serial.println("without clearing data");
       }
       //and load the normal screen
       lv_scr_load(ui_TrumaMainScreen);
-      screenchanged=true;
-      refreshdelay=millis();
       screenwasoff=false;
       showingError=false;
     }
   }
 }
 
+//If the checkbox to turn off the screen is checked and there's no activity
+//turn off the backlight, otherwise adjust it with the light sensor
 float BrightnessCallback() {
   float adapt=smartdisplay_lcd_adaptive_brightness_cds();
   if (lv_disp_get_inactive_time(lv_disp_get_default())>30000 && lv_obj_has_state(ui_ScreenOff, LV_STATE_CHECKED)) {
@@ -141,16 +178,18 @@ float BrightnessCallback() {
   return adapt;
 }
 
+//----------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
   smartdisplay_init();
    __attribute__((unused)) auto disp = lv_disp_get_default();
- lv_disp_set_rotation(disp, LV_DISP_ROT_90);
-   ui_init();
- smartdisplay_lcd_set_brightness_cb(BrightnessCallback, 100);  
- //starts the wifi (loop will check if it's connected)
+  lv_disp_set_rotation(disp, LV_DISP_ROT_90);
+  ui_init();
+  smartdisplay_lcd_set_brightness_cb(BrightnessCallback, 100);  
+  //starts the wifi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WLAN_SSID, WLAN_PASS);
+  lastwifi=millis();
 
   //starts the mqtt connection to the broker
   mqttClient.setURI(MQTT_URI, MQTT_USERNAME, MQTT_PASSWORD);
@@ -162,7 +201,8 @@ void setup() {
   refreshdelay=millis();
 }
 
-
+//Sends the temperature setting to the broker
+//(either 0.0 if the switch is of or the selected value if it is on)
 void SendTemperature() {
   if (lv_obj_has_state(ui_Heating,LV_STATE_CHECKED)) {
     int t=lv_spinbox_get_value(ui_Temp);
@@ -178,22 +218,76 @@ void SendTemperature() {
   }
 }
 
+//checks and restart the wifi connection
+void CheckWifi() {
+  // check wifi connectivity
+  if (WiFi.status()==WL_CONNECTED) {
+    lastwifi=millis();
+    if (!wifistarted) {
+      Serial.print("IP address ");
+      Serial.println(WiFi.localIP());
+      wifistarted=true;
+      ShowErrorOrStatus();
+    } 
+  } else {
+    if (wifistarted) {
+      Serial.println("Wifi connection lost");
+      wifistarted=false;
+      mqttok=false;
+      ShowErrorOrStatus();
+    }
+    unsigned long elapsed=millis()-lastwifi;
+    if (elapsed>10000) {
+    WiFi.reconnect();
+    lastwifi=millis();
+    }
+  }
+}
+
+//---------------------------------------------------------------------
 void loop() {
 
+  CheckWifi();
+
   //hack to try and fix the missing redraws of the screen
+  //without this hacks, parts of the screen won't be redrawn
+  //showing elements, or parts of element, that shouldn't be there
+  //it works but it slows everything down.
+  //I could use a longer delay, but then the scrolling label
+  //will become jumpy, this way at least the scrolling is 
+  //always slow with no sudden jumps
   
-  if(screenchanged && millis()-refreshdelay>500) {
-    screenchanged=false;
+  if(millis()-refreshdelay>100) {
+    refreshdelay=millis();
     lv_obj_invalidate(lv_scr_act());
   } 
 
+  //only send the temperature setpoint after a delay
+  //of the selected temperature change or the switch change
   if (tempchanged) {
     if (millis()-tempdelay>1000) {
       tempchanged=false;
       SendTemperature();
     }
   }
+
+  //keep track of the heartbeat only if the broker is connected 
+  if (!wifistarted || !mqttok) {
+    noheartbeat=false;
+    lastheartbeat=millis();
+  } else {
+    if (!noheartbeat) {
+      if (millis()-lastheartbeat>15000) {
+        noheartbeat=true;
+        ShowErrorOrStatus();
+      }
+    }
+  }
+
   lv_timer_handler();
+
+  //just because
+  delay(10);
 }
 
 /* mqtt handling */
@@ -216,38 +310,38 @@ void callback(const String& topic, const String& payload) {
   Serial.print(payload);
   Serial.println("\"");
   Serial.flush();
-  if (topic=="truma/status/room_temp") {
-    lv_label_set_text(ui_RoomTemp,payload.c_str());
+  //statuses
+  if (topic=="truma/status/heartbeat") {
+     if (noheartbeat) {
+      noheartbeat=false;
+      ShowErrorOrStatus();
+     }
+     lastheartbeat=millis();
+  }
+  else if (topic=="truma/status/room_temp") {
+    SetLabelText(ui_RoomTemp,payload.c_str());
   }
   else if (topic=="truma/status/water_temp") {
-    lv_label_set_text(ui_WaterTemp,payload.c_str());
+    SetLabelText(ui_WaterTemp,payload.c_str());
   }
   else if (topic=="truma/status/voltage") {
-    lv_label_set_text(ui_Voltage,payload.c_str());
+    SetLabelText(ui_Voltage,payload.c_str());
   }
   else if (topic=="truma/status/window") {
     if (payload=="1") {
-      lv_label_set_text(ui_Window,"cerrada");
-      lv_obj_set_style_text_color(ui_Window, LV_COLOR_MAKE(0,0,0), 0);
+      SetLabelText(ui_Window,"cerrada");
+      SetTextColor(ui_Window, LV_COLOR_MAKE(0,0,0));
     } else {
-      lv_label_set_text(ui_Window,"abierta");
-      lv_obj_set_style_text_color(ui_Window, LV_COLOR_MAKE(255,0,0), 0);
+      SetLabelText(ui_Window,"abierta");
+      SetTextColor(ui_Window, LV_COLOR_MAKE(255,0,0));
     }
   }
   else if (topic=="truma/status/roomdemand") {
-    if (payload=="1") {
-      lv_obj_clear_flag(ui_RoomDemand, LV_OBJ_FLAG_HIDDEN);
-    } else {
-      lv_obj_add_flag(ui_RoomDemand, LV_OBJ_FLAG_HIDDEN);
-    }
+    Show(ui_RoomDemand, payload=="1");
   }
   else if (topic=="truma/status/waterdemand") {
-    if (payload=="1") {
-      lv_obj_clear_flag(ui_WaterDemand, LV_OBJ_FLAG_HIDDEN);
-    } else {
-      lv_obj_add_flag(ui_WaterDemand, LV_OBJ_FLAG_HIDDEN);
-    }
-  }
+    Show(ui_WaterDemand, payload=="1");
+  }  
   else if (topic=="truma/status/waterboost") {
     waterboost=payload;
     ShowErrorOrWaterboost();
@@ -255,31 +349,31 @@ void callback(const String& topic, const String& payload) {
   else if (topic=="truma/status/err_class") {
     boolean showbutton=false;
     if (payload=="0") {
-      lv_label_set_text(ui_ErrClass,"");
+      SetLabelText(ui_ErrClass,"");
     }    
     else if (payload=="1" || payload=="2") {
-      lv_label_set_text(ui_ErrClass,"W");
+      SetLabelText(ui_ErrClass,"W");
     }
     else if (payload=="10" || payload=="20" || payload=="30") {
-      lv_label_set_text(ui_ErrClass,"E");
+      SetLabelText(ui_ErrClass,"E");
       showbutton=true;
     }
     else if (payload=="40") {
-      lv_label_set_text(ui_ErrClass, "L");
+      SetLabelText(ui_ErrClass, "L");
     }
     else {
-      lv_label_set_text(ui_ErrClass, "?");
+      SetLabelText(ui_ErrClass, "?");
       showbutton=true;
     }
-    ShowResetButton(showbutton);
+    Show(ui_ResetButton, showbutton);
   }
   else if (topic=="truma/status/err_code") {
     if (payload=="0") {
-      lv_label_set_text(ui_ErrCode,"");
+      SetLabelText(ui_ErrCode,"");
       error=0;
     } else {
       error=atoi(payload.c_str());
-      lv_label_set_text(ui_ErrCode,payload.c_str());
+      SetLabelText(ui_ErrCode,payload.c_str());
     }
     ShowErrorOrWaterboost();
   }  
@@ -292,7 +386,7 @@ void callback(const String& topic, const String& payload) {
     ShowErrorOrStatus();
   }
 
-
+  //setpoints (changed somewhere else and reflected here)
   else if (topic=="truma/set/temp") {
     double temp=atof(payload.c_str());
     if (temp<5.0) {
@@ -318,7 +412,6 @@ void callback(const String& topic, const String& payload) {
       }
     }
   }
-
 }
 
 // connection to the broker established, subscribe to the settings and
@@ -333,11 +426,13 @@ void onConnectionEstablishedCallback(esp_mqtt_client_handle_t client) {
   RequestRefresh();
 }
 
+//Error reset button clicked
 void ResetError(lv_event_t * e) {
   Serial.println("Reset clicked, sending truma/set/error_reset");
   mqttClient.publish("truma/set/error_reset","1");
 }
 
+//Increments or decrements the temperature setpoint
 void ChangeTemp(int increment) {
   tempchanged=true;
   tempdelay=millis();
@@ -351,16 +446,19 @@ void ChangeTemp(int increment) {
   lv_spinbox_set_value(ui_Temp,temp);
 }
 
+//Button + clicked or long pressed (repeat)
 void IncrTemperature(lv_event_t * e) {
   Serial.println("IncrTemperature");
   ChangeTemp(1);
 }
 
+//Button - clicked or long pressed (repeat)
 void DecrTemperature(lv_event_t * e) {
   Serial.println("DecrTemperature");
   ChangeTemp(-1);
 }
 
+//Boiler selection changed
 void WaterChanged(lv_event_t * e)
 {
   Serial.println("WaterChanged");
@@ -370,6 +468,7 @@ void WaterChanged(lv_event_t * e)
   }
 }
 
+//Fan selection changed
 void FanChanged(lv_event_t * e)
 {
   Serial.println("FanChanged");
@@ -379,7 +478,7 @@ void FanChanged(lv_event_t * e)
   }
 }
 
-
+//Heating switch changed
 void HeatingOn(lv_event_t * e)
 {
   Serial.println("HeatingOn");
