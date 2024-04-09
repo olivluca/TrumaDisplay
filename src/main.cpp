@@ -102,9 +102,9 @@ void Show(lv_obj_t * obj, boolean show) {
 
 //Only sets the text color if it's  different
 void SetTextColor(lv_obj_t * obj, lv_color_t color) {
-  lv_color_t oldcolor=lv_obj_get_style_text_color(obj,0);
+  lv_color_t oldcolor=lv_obj_get_style_text_color(obj, LV_PART_MAIN);
   if (memcmp(&oldcolor,&color,sizeof(color))!=0) {
-    lv_obj_set_style_text_color(obj, color, 0);
+    lv_obj_set_style_text_color(obj, color, LV_PART_MAIN);
   }
 }
 
