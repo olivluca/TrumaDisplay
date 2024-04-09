@@ -36,7 +36,45 @@ boolean wifistarted=false;
 unsigned long lastwifi;
 
 String BoilerValues[] = {"off","eco","high","boost"};
-String FanValues[] = {"off","eco","high","1","2","3","4","5","6","7","8","9","10"};
+String FanValues[] = {"eco","high","off","1","2","3","4","5","6","7","8","9","10"};
+String FanEnabled[] {"Eco\nHigh", "Eco\nHigh\nOff\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"};
+
+//only enable the fan when the boiler is off or the heating is on
+//(with heating off and the boiler on the fan should stay off,
+//with heating on it should allow to select either "eco" or "high",
+//when both heating and boiler are off a ventilation speed can be selected)
+void EnableFan() {
+  boolean enable= lv_obj_has_state(ui_Heating, LV_STATE_CHECKED) || lv_dropdown_get_selected(ui_Boiler)==0;
+  boolean enabled=lv_obj_has_flag(ui_Fan, LV_OBJ_FLAG_CLICKABLE);
+  if (enable!=enabled) {
+    if (enable) {
+      lv_obj_add_flag(ui_Fan, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_clear_state(ui_Fan, LV_STATE_DISABLED);
+    } else {
+      lv_obj_clear_flag(ui_Fan, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_add_state(ui_Fan, LV_STATE_DISABLED);
+    }
+  }
+}
+
+//Enables/disable the manual speed selection for the fan
+//when the heating is on only eco or high should be available
+void EnableFanSpeed(boolean enable) {
+  int index;
+  if (enable) {
+    index=1;
+  } else {
+    index=0;
+  }
+  if (strcmp(FanEnabled[index].c_str(),lv_dropdown_get_options(ui_Fan))!=0) {
+    int selection=lv_dropdown_get_selected(ui_Fan);
+    lv_dropdown_set_options(ui_Fan,FanEnabled[index].c_str());
+    if (!enable && selection>1) {
+      selection=0; 
+    }
+    lv_dropdown_set_selected(ui_Fan,selection);
+  }
+}
 
 /* I don't know if strcmp is more costly that the mindless string 
    reallocation done by lvgl, but changing the label when it isn't
@@ -212,9 +250,13 @@ void SendTemperature() {
     Serial.print("Sending temperature setpoint ");
     Serial.println(value,1);
     mqttClient.publish("truma/set/temp", String(value,1),0,true);
+    EnableFanSpeed(false);
+    EnableFan();
   } else {
     Serial.println("Sending 0.0");
     mqttClient.publish("truma/set/temp", "0.0",0,true);
+    EnableFanSpeed(true);
+    EnableFan();
   }
 }
 
@@ -391,15 +433,20 @@ void callback(const String& topic, const String& payload) {
     double temp=atof(payload.c_str());
     if (temp<5.0) {
        lv_obj_clear_state(ui_Heating,LV_STATE_CHECKED);
+       EnableFanSpeed(true);
+       EnableFan();
     } else {
        lv_obj_add_state(ui_Heating,LV_STATE_CHECKED);
        lv_spinbox_set_value(ui_Temp, temp*10);
+       EnableFanSpeed(false);
+       EnableFan();
     }
   }
   else if (topic=="truma/set/boiler") {
     for (int i=0; i<std::extent<decltype(BoilerValues)>::value; i++) {
       if (payload==BoilerValues[i]) {
         lv_dropdown_set_selected(ui_Boiler,i);
+        EnableFan();
         break;
       }
     }
@@ -465,6 +512,7 @@ void WaterChanged(lv_event_t * e)
   int value=lv_dropdown_get_selected(ui_Boiler);
   if (value>=0 && value<std::extent<decltype(BoilerValues)>::value) {
     mqttClient.publish("truma/set/boiler",BoilerValues[value],0,true);
+    EnableFan();
   }
 }
 

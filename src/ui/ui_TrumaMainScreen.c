@@ -64,13 +64,17 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_style_text_font(lv_dropdown_get_list(ui_Boiler), &ui_font_Roboto,  LV_PART_SELECTED | LV_STATE_DEFAULT);
 
     ui_Fan = lv_dropdown_create(ui_TrumaMainScreen);
-    lv_dropdown_set_options(ui_Fan, "Off\nEco\nHigh\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10");
+    lv_dropdown_set_options(ui_Fan, "Eco\nHigh\nOff\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10");
     lv_obj_set_width(ui_Fan, 77);
     lv_obj_set_height(ui_Fan, 40);
     lv_obj_set_x(ui_Fan, 228);
     lv_obj_set_y(ui_Fan, 20);
     lv_obj_add_flag(ui_Fan, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_set_style_text_font(ui_Fan, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Fan, lv_color_hex(0x808080), LV_PART_MAIN | LV_STATE_DISABLED);
+    lv_obj_set_style_text_opa(ui_Fan, 255, LV_PART_MAIN | LV_STATE_DISABLED);
+    lv_obj_set_style_bg_color(ui_Fan, lv_color_hex(0xB4B6B4), LV_PART_MAIN | LV_STATE_DISABLED);
+    lv_obj_set_style_bg_opa(ui_Fan, 255, LV_PART_MAIN | LV_STATE_DISABLED);
 
     lv_obj_set_style_text_font(ui_Fan, &lv_font_montserrat_14, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 

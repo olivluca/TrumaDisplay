@@ -1576,7 +1576,6 @@
               },
               {
                 "nid": -648923141,
-                "flags": 1048576,
                 "strtype": "OBJECT/States",
                 "InheritedType": 1
               },
@@ -1636,7 +1635,7 @@
               {
                 "nid": -715844254,
                 "strtype": "DROPDOWN/Options",
-                "strval": "Off\\nEco\\nHigh\\n1\\n2\\n3\\n4\\n5\\n6\\n7\\n8\\n9\\n10",
+                "strval": "Eco\\nHigh\\nOff\\n1\\n2\\n3\\n4\\n5\\n6\\n7\\n8\\n9\\n10",
                 "InheritedType": 10
               },
               {
@@ -1670,6 +1669,36 @@
                         "strtype": "_style/Text_Font",
                         "strval": "Roboto",
                         "InheritedType": 3
+                      }
+                    ],
+                    "InheritedType": 1
+                  },
+                  {
+                    "nid": 666999413,
+                    "strtype": "_style/StyleState",
+                    "strval": "DISABLED",
+                    "childs": [
+                      {
+                        "nid": -1408213440,
+                        "strtype": "_style/Text_Color",
+                        "intarray": [
+                          128,
+                          128,
+                          128,
+                          255
+                        ],
+                        "InheritedType": 7
+                      },
+                      {
+                        "nid": -973453500,
+                        "strtype": "_style/Bg_Color",
+                        "intarray": [
+                          180,
+                          182,
+                          180,
+                          255
+                        ],
+                        "InheritedType": 7
                       }
                     ],
                     "InheritedType": 1
