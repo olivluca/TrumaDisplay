@@ -23,7 +23,7 @@ void ui_TrumaMainScreen_screen_init(void)
 
     ui_Temp = lv_spinbox_create(ui_TrumaMainScreen);
     lv_obj_set_width(ui_Temp, 50);
-    lv_obj_set_height(ui_Temp, 35);
+    lv_obj_set_height(ui_Temp, 40);
     lv_obj_set_x(ui_Temp, 40);
     lv_obj_set_y(ui_Temp, 20);
     lv_obj_add_state(ui_Temp, LV_STATE_DISABLED);       /// States
@@ -40,10 +40,10 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_Temp, 255, LV_PART_CURSOR | LV_STATE_DISABLED);
 
     ui_Heating = lv_switch_create(ui_TrumaMainScreen);
-    lv_obj_set_width(ui_Heating, 40);
-    lv_obj_set_height(ui_Heating, 20);
-    lv_obj_set_x(ui_Heating, 44);
-    lv_obj_set_y(ui_Heating, 55);
+    lv_obj_set_width(ui_Heating, 50);
+    lv_obj_set_height(ui_Heating, 24);
+    lv_obj_set_x(ui_Heating, 40);
+    lv_obj_set_y(ui_Heating, 61);
     lv_obj_set_style_bg_color(ui_Heating, lv_color_hex(0x0F97F2), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Heating, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -132,7 +132,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Label7, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label7, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Label7, 5);
-    lv_obj_set_y(ui_Label7, 80);
+    lv_obj_set_y(ui_Label7, 89);
     lv_label_set_text(ui_Label7, "Temperatura ºC");
     lv_obj_set_style_text_font(ui_Label7, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -140,7 +140,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Label8, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label8, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Label8, 144);
-    lv_obj_set_y(ui_Label8, 80);
+    lv_obj_set_y(ui_Label8, 89);
     lv_label_set_text(ui_Label8, "Agua ºC");
     lv_obj_set_style_text_font(ui_Label8, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -148,7 +148,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Label9, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label9, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Label9, 233);
-    lv_obj_set_y(ui_Label9, 80);
+    lv_obj_set_y(ui_Label9, 89);
     lv_label_set_text(ui_Label9, "Tensión V");
     lv_obj_set_style_text_font(ui_Label9, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -156,7 +156,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_RoomTemp, 90);
     lv_obj_set_height(ui_RoomTemp, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_RoomTemp, 13);
-    lv_obj_set_y(ui_RoomTemp, 102);
+    lv_obj_set_y(ui_RoomTemp, 109);
     lv_label_set_long_mode(ui_RoomTemp, LV_LABEL_LONG_CLIP);
     lv_label_set_text(ui_RoomTemp, "--");
     lv_obj_set_style_text_align(ui_RoomTemp, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -166,7 +166,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_WaterTemp, 90);
     lv_obj_set_height(ui_WaterTemp, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_WaterTemp, 119);
-    lv_obj_set_y(ui_WaterTemp, 100);
+    lv_obj_set_y(ui_WaterTemp, 109);
     lv_label_set_long_mode(ui_WaterTemp, LV_LABEL_LONG_CLIP);
     lv_label_set_text(ui_WaterTemp, "--");
     lv_obj_set_style_text_align(ui_WaterTemp, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -176,7 +176,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Voltage, 90);
     lv_obj_set_height(ui_Voltage, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Voltage, 217);
-    lv_obj_set_y(ui_Voltage, 100);
+    lv_obj_set_y(ui_Voltage, 109);
     lv_label_set_long_mode(ui_Voltage, LV_LABEL_LONG_CLIP);
     lv_label_set_text(ui_Voltage, "--");
     lv_obj_set_style_text_align(ui_Voltage, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -186,7 +186,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Waterboost, lv_pct(100));
     lv_obj_set_height(ui_Waterboost, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Waterboost, 0);
-    lv_obj_set_y(ui_Waterboost, -6);
+    lv_obj_set_y(ui_Waterboost, -3);
     lv_obj_set_align(ui_Waterboost, LV_ALIGN_BOTTOM_MID);
     lv_label_set_long_mode(ui_Waterboost, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_label_set_text(ui_Waterboost, "waterboost");
@@ -197,7 +197,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_ResetButton, 100);
     lv_obj_set_height(ui_ResetButton, 30);
     lv_obj_set_x(ui_ResetButton, -5);
-    lv_obj_set_y(ui_ResetButton, -30);
+    lv_obj_set_y(ui_ResetButton, -27);
     lv_obj_set_align(ui_ResetButton, LV_ALIGN_BOTTOM_RIGHT);
     lv_obj_add_flag(ui_ResetButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_clear_flag(ui_ResetButton, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
@@ -215,7 +215,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_ErrClass, 40);
     lv_obj_set_height(ui_ErrClass, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_ErrClass, 2);
-    lv_obj_set_y(ui_ErrClass, -22);
+    lv_obj_set_y(ui_ErrClass, -19);
     lv_obj_set_align(ui_ErrClass, LV_ALIGN_BOTTOM_LEFT);
     lv_label_set_long_mode(ui_ErrClass, LV_LABEL_LONG_CLIP);
     lv_label_set_text(ui_ErrClass, "W");
@@ -227,7 +227,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_ErrCode, 114);
     lv_obj_set_height(ui_ErrCode, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_ErrCode, 52);
-    lv_obj_set_y(ui_ErrCode, -22);
+    lv_obj_set_y(ui_ErrCode, -19);
     lv_obj_set_align(ui_ErrCode, LV_ALIGN_BOTTOM_LEFT);
     lv_label_set_long_mode(ui_ErrCode, LV_LABEL_LONG_CLIP);
     lv_label_set_text(ui_ErrCode, "255");
@@ -239,7 +239,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_RoomDemand, 20);
     lv_obj_set_height(ui_RoomDemand, 20);
     lv_obj_set_x(ui_RoomDemand, 113);
-    lv_obj_set_y(ui_RoomDemand, 79);
+    lv_obj_set_y(ui_RoomDemand, 85);
     lv_obj_clear_flag(ui_RoomDemand, LV_OBJ_FLAG_CLICKABLE);      /// Flags
     lv_obj_set_style_border_color(ui_RoomDemand, lv_color_hex(0xB4B4B4), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_opa(ui_RoomDemand, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -254,7 +254,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_WaterDemand, 20);
     lv_obj_set_height(ui_WaterDemand, 20);
     lv_obj_set_x(ui_WaterDemand, 201);
-    lv_obj_set_y(ui_WaterDemand, 79);
+    lv_obj_set_y(ui_WaterDemand, 85);
     lv_obj_clear_flag(ui_WaterDemand, LV_OBJ_FLAG_CLICKABLE);      /// Flags
     lv_obj_set_style_arc_color(ui_WaterDemand, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_opa(ui_WaterDemand, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -267,7 +267,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Label10, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label10, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Label10, 4);
-    lv_obj_set_y(ui_Label10, 156);
+    lv_obj_set_y(ui_Label10, 159);
     lv_label_set_text(ui_Label10, "Ventana:");
     lv_obj_set_style_text_font(ui_Label10, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -275,7 +275,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_width(ui_Window, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Window, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Window, 65);
-    lv_obj_set_y(ui_Window, 156);
+    lv_obj_set_y(ui_Window, 159);
     lv_label_set_text(ui_Window, "---");
     lv_obj_set_style_text_font(ui_Window, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -284,7 +284,7 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_set_height(ui_ScreenOff, 22);
     lv_obj_set_width(ui_ScreenOff, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_x(ui_ScreenOff, -7);
-    lv_obj_set_y(ui_ScreenOff, 154);
+    lv_obj_set_y(ui_ScreenOff, 157);
     lv_obj_set_align(ui_ScreenOff, LV_ALIGN_TOP_RIGHT);
     lv_obj_add_state(ui_ScreenOff, LV_STATE_CHECKED);       /// States
     lv_obj_add_flag(ui_ScreenOff, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
