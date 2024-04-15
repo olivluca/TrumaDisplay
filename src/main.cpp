@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <type_traits>
 #include "errtext.h"
+#include <ArduinoOTA.h>
 
 //------ you should create your own wifi.h with
 //#define WLAN_SSID "your_ssid"
@@ -25,6 +26,7 @@ boolean tempchanged=false;
 boolean screenoff=false;
 boolean screenwasoff=false;
 boolean noheartbeat=false;
+boolean inota=false;
 String waterboost="0";
 int error=0;
 
@@ -237,6 +239,35 @@ void setup() {
   mqttClient.loopStart();
   ShowErrorOrStatus();
   refreshdelay=millis();
+  ArduinoOTA
+      .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+          type = "sketch";
+        else // U_SPIFFS
+          type = "filesystem";
+
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        inota=true;
+        Serial.println("Start updating " + type);
+      })
+      .onEnd([]() {
+        inota=false;
+        Serial.println("\nEnd");
+      })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      })
+      .onError([](ota_error_t error) {
+        inota=false;
+        Serial.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+        else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      });
+
 }
 
 //Sends the temperature setting to the broker
@@ -268,12 +299,15 @@ void CheckWifi() {
     if (!wifistarted) {
       Serial.print("IP address ");
       Serial.println(WiFi.localIP());
+      ArduinoOTA.setHostname("trumadisplay");
+      ArduinoOTA.begin();
       wifistarted=true;
       ShowErrorOrStatus();
     } 
   } else {
     if (wifistarted) {
       Serial.println("Wifi connection lost");
+      ArduinoOTA.end();
       wifistarted=false;
       mqttok=false;
       ShowErrorOrStatus();
@@ -290,6 +324,9 @@ void CheckWifi() {
 void loop() {
 
   CheckWifi();
+  if (wifistarted) {
+    ArduinoOTA.handle();
+  }
 
   //hack to try and fix the missing redraws of the screen
   //without this hacks, parts of the screen won't be redrawn
