@@ -222,6 +222,13 @@ float BrightnessCallback() {
 void setup() {
   Serial.begin(115200);
   smartdisplay_init();
+
+  //hardcoded calibration data obtained touching the top left corner, 
+  //top right corner and bottom left corner of the screen
+  lv_point_t screen[] = {{.x=0, .y=319}, {.x=0, .y=0}, {.x=239,.y=319}};
+  lv_point_t touch[] =  {{.x=15,.y=288}, {.x=17,.y=15},{.x=224,.y=288}};
+  touch_calibration_data=smartdisplay_compute_touch_calibration(screen,touch);
+
    __attribute__((unused)) auto disp = lv_disp_get_default();
   lv_disp_set_rotation(disp, LV_DISP_ROT_90);
   ui_init();
