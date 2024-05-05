@@ -38,6 +38,7 @@ unsigned long lastheartbeat;
 
 boolean wifistarted=false;
 unsigned long lastwifi;
+unsigned long lastping;
 
 TOsk *osk;
 
@@ -228,10 +229,12 @@ float BrightnessCallback() {
       screenoff=true;
       ShowErrorOrStatus();
     }
+    lastping=millis();
     return 0.0;
   }
   if (screenoff) {
     screenoff=false;
+    lastping=millis()-10000;
     ShowErrorOrStatus();
   }
   return adapt;
@@ -266,6 +269,7 @@ void setup() {
   mqttClient.loopStart();
   ShowErrorOrStatus();
   refreshdelay=millis();
+  lastping=millis()-10000;
   ArduinoOTA
       .onStart([]() {
         String type;
@@ -367,6 +371,12 @@ void loop() {
     lv_obj_invalidate(lv_scr_act());
   } 
 
+  //keep the truma on with the screen active
+  if (millis()-lastping>10000) {
+    mqttClient.publish("truma/set/ping","1");
+    lastping=millis();
+  }
+  
   //only send the temperature setpoint after a delay
   //of the selected temperature change or the switch change
   if (tempchanged) {
