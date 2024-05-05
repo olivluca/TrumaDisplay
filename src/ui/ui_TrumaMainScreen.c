@@ -21,24 +21,6 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_label_set_text(ui_Label1, "Calefacción");
     lv_obj_set_style_text_font(ui_Label1, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Temp = lv_spinbox_create(ui_TrumaMainScreen);
-    lv_obj_set_width(ui_Temp, 50);
-    lv_obj_set_height(ui_Temp, 40);
-    lv_obj_set_x(ui_Temp, 40);
-    lv_obj_set_y(ui_Temp, 20);
-    lv_obj_add_state(ui_Temp, LV_STATE_DISABLED);       /// States
-    lv_obj_clear_flag(ui_Temp, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE |
-                      LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_SNAPPABLE);     /// Flags
-    lv_spinbox_set_digit_format(ui_Temp, 3, 2);
-    lv_spinbox_set_range(ui_Temp, 50, 300);
-    lv_spinbox_set_cursor_pos(ui_Temp, 1 - 1);
-    lv_obj_set_style_text_font(ui_Temp, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_Temp, lv_color_hex(0xFFFFFF), LV_PART_CURSOR | LV_STATE_DISABLED);
-    lv_obj_set_style_bg_opa(ui_Temp, 255, LV_PART_CURSOR | LV_STATE_DISABLED);
-    lv_obj_set_style_text_color(ui_Temp, lv_color_hex(0x000000), LV_PART_CURSOR | LV_STATE_DISABLED);
-    lv_obj_set_style_text_opa(ui_Temp, 255, LV_PART_CURSOR | LV_STATE_DISABLED);
-
     ui_Heating = lv_switch_create(ui_TrumaMainScreen);
     lv_obj_set_width(ui_Heating, 50);
     lv_obj_set_height(ui_Heating, 24);
@@ -98,30 +80,30 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_label_set_text(ui_Label4, "Ventilador");
     lv_obj_set_style_text_font(ui_Label4, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Button1 = lv_btn_create(ui_TrumaMainScreen);
-    lv_obj_set_width(ui_Button1, 35);
-    lv_obj_set_height(ui_Button1, 40);
-    lv_obj_set_x(ui_Button1, 0);
-    lv_obj_set_y(ui_Button1, 20);
-    lv_obj_add_flag(ui_Button1, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_clear_flag(ui_Button1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_btnDecrement = lv_btn_create(ui_TrumaMainScreen);
+    lv_obj_set_width(ui_btnDecrement, 35);
+    lv_obj_set_height(ui_btnDecrement, 40);
+    lv_obj_set_x(ui_btnDecrement, 0);
+    lv_obj_set_y(ui_btnDecrement, 20);
+    lv_obj_add_flag(ui_btnDecrement, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_btnDecrement, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_Label5 = lv_label_create(ui_Button1);
+    ui_Label5 = lv_label_create(ui_btnDecrement);
     lv_obj_set_width(ui_Label5, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label5, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_Label5, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Label5, "-");
     lv_obj_set_style_text_font(ui_Label5, &ui_font_Roboto38, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Button2 = lv_btn_create(ui_TrumaMainScreen);
-    lv_obj_set_width(ui_Button2, 35);
-    lv_obj_set_height(ui_Button2, 40);
-    lv_obj_set_x(ui_Button2, 96);
-    lv_obj_set_y(ui_Button2, 20);
-    lv_obj_add_flag(ui_Button2, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_clear_flag(ui_Button2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_btnIncrement = lv_btn_create(ui_TrumaMainScreen);
+    lv_obj_set_width(ui_btnIncrement, 35);
+    lv_obj_set_height(ui_btnIncrement, 40);
+    lv_obj_set_x(ui_btnIncrement, 96);
+    lv_obj_set_y(ui_btnIncrement, 20);
+    lv_obj_add_flag(ui_btnIncrement, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_btnIncrement, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_Label6 = lv_label_create(ui_Button2);
+    ui_Label6 = lv_label_create(ui_btnIncrement);
     lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label6, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_Label6, LV_ALIGN_CENTER);
@@ -290,11 +272,35 @@ void ui_TrumaMainScreen_screen_init(void)
     lv_obj_add_flag(ui_ScreenOff, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_set_style_text_font(ui_ScreenOff, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Keyboard = lv_keyboard_create(ui_TrumaMainScreen);
+    lv_keyboard_set_mode(ui_Keyboard, LV_KEYBOARD_MODE_NUMBER);
+    lv_obj_set_width(ui_Keyboard, 306);
+    lv_obj_set_height(ui_Keyboard, 167);
+    lv_obj_set_x(ui_Keyboard, -2);
+    lv_obj_set_y(ui_Keyboard, -9);
+    lv_obj_add_flag(ui_Keyboard, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_clear_flag(ui_Keyboard, LV_OBJ_FLAG_SCROLL_ELASTIC);      /// Flags
+
+    ui_Temp = lv_textarea_create(ui_TrumaMainScreen);
+    lv_obj_set_width(ui_Temp, 49);
+    lv_obj_set_height(ui_Temp, LV_SIZE_CONTENT);    /// 40
+    lv_obj_set_x(ui_Temp, 42);
+    lv_obj_set_y(ui_Temp, 20);
+    lv_textarea_set_max_length(ui_Temp, 4);
+    lv_textarea_set_text(ui_Temp, "5.0");
+    lv_textarea_set_one_line(ui_Temp, true);
+    lv_obj_clear_flag(ui_Temp, LV_OBJ_FLAG_CLICK_FOCUSABLE);      /// Flags
+    lv_obj_set_style_text_font(ui_Temp, &ui_font_Roboto, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+
+
     lv_obj_add_event_cb(ui_Heating, ui_event_Heating, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Boiler, ui_event_Boiler, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Fan, ui_event_Fan, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_Button1, ui_event_Button1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_Button2, ui_event_Button2, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_btnDecrement, ui_event_btnDecrement, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_btnIncrement, ui_event_btnIncrement, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_ResetButton, ui_event_ResetButton, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Keyboard, ui_event_Keyboard, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Temp, ui_event_Temp, LV_EVENT_ALL, NULL);
 
 }

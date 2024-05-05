@@ -14,7 +14,6 @@ void j_Animation(lv_obj_t * TargetObject, int delay);
 void ui_TrumaMainScreen_screen_init(void);
 lv_obj_t * ui_TrumaMainScreen;
 lv_obj_t * ui_Label1;
-lv_obj_t * ui_Temp;
 void ui_event_Heating(lv_event_t * e);
 lv_obj_t * ui_Heating;
 void ui_event_Boiler(lv_event_t * e);
@@ -23,11 +22,11 @@ void ui_event_Fan(lv_event_t * e);
 lv_obj_t * ui_Fan;
 lv_obj_t * ui_Label3;
 lv_obj_t * ui_Label4;
-void ui_event_Button1(lv_event_t * e);
-lv_obj_t * ui_Button1;
+void ui_event_btnDecrement(lv_event_t * e);
+lv_obj_t * ui_btnDecrement;
 lv_obj_t * ui_Label5;
-void ui_event_Button2(lv_event_t * e);
-lv_obj_t * ui_Button2;
+void ui_event_btnIncrement(lv_event_t * e);
+lv_obj_t * ui_btnIncrement;
 lv_obj_t * ui_Label6;
 lv_obj_t * ui_Label7;
 lv_obj_t * ui_Label8;
@@ -46,6 +45,10 @@ lv_obj_t * ui_WaterDemand;
 lv_obj_t * ui_Label10;
 lv_obj_t * ui_Window;
 lv_obj_t * ui_ScreenOff;
+void ui_event_Keyboard(lv_event_t * e);
+lv_obj_t * ui_Keyboard;
+void ui_event_Temp(lv_event_t * e);
+lv_obj_t * ui_Temp;
 
 
 // SCREEN: ui_ErrorScreen
@@ -93,7 +96,7 @@ void ui_event_Fan(lv_event_t * e)
         FanChanged(e);
     }
 }
-void ui_event_Button1(lv_event_t * e)
+void ui_event_btnDecrement(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
@@ -104,7 +107,7 @@ void ui_event_Button1(lv_event_t * e)
         DecrTemperature(e);
     }
 }
-void ui_event_Button2(lv_event_t * e)
+void ui_event_btnIncrement(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
@@ -121,6 +124,22 @@ void ui_event_ResetButton(lv_event_t * e)
     lv_obj_t * target = lv_event_get_target(e);
     if(event_code == LV_EVENT_CLICKED) {
         ResetError(e);
+    }
+}
+void ui_event_Keyboard(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_VALUE_CHANGED) {
+        KeyboardClick(e);
+    }
+}
+void ui_event_Temp(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        TemperatureClick(e);
     }
 }
 

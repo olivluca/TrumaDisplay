@@ -16,6 +16,8 @@ void FanChanged(lv_event_t * e);
 void DecrTemperature(lv_event_t * e);
 void IncrTemperature(lv_event_t * e);
 void ResetError(lv_event_t * e);
+void KeyboardClick(lv_event_t * e);
+void TemperatureClick(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

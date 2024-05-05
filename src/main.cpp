@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <type_traits>
 #include "errtext.h"
+#include "osk.hpp"
 #include <ArduinoOTA.h>
 
 //------ you should create your own wifi.h with
@@ -30,6 +31,7 @@ boolean inota=false;
 String waterboost="0";
 int error=0;
 
+int temperature=50;
 unsigned long tempdelay;
 unsigned long refreshdelay;
 unsigned long lastheartbeat;
@@ -37,9 +39,26 @@ unsigned long lastheartbeat;
 boolean wifistarted=false;
 unsigned long lastwifi;
 
+TOsk *osk;
+
 String BoilerValues[] = {"off","eco","high","boost"};
 String FanValues[] = {"eco","high","off","1","2","3","4","5","6","7","8","9","10"};
 String FanEnabled[] {"Eco\nHigh", "Eco\nHigh\nOff\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"};
+
+//displays the set temperature
+void ShowTemperature() {
+  char buffer[10];
+  snprintf(buffer, sizeof(buffer), "%.1f", temperature/10.0);
+  lv_textarea_set_text(ui_Temp,buffer);
+}
+
+//temperature set from the onscreen keyboard
+void SetTemperature(int t) {
+  temperature=t;
+  ShowTemperature();
+  tempchanged=true;
+  tempdelay=millis();
+}
 
 //only enable the fan when the boiler is off or the heating is on
 //(with heating off and the boiler on the fan should stay off,
@@ -232,6 +251,7 @@ void setup() {
    __attribute__((unused)) auto disp = lv_disp_get_default();
   lv_disp_set_rotation(disp, LV_DISP_ROT_90);
   ui_init();
+  osk = new TOsk(ui_Keyboard, ui_Temp, ui_btnIncrement, ui_btnDecrement, SetTemperature, ShowTemperature);
   smartdisplay_lcd_set_brightness_cb(BrightnessCallback, 100);  
   //starts the wifi
   WiFi.mode(WIFI_STA);
@@ -281,10 +301,9 @@ void setup() {
 //(either 0.0 if the switch is of or the selected value if it is on)
 void SendTemperature() {
   if (lv_obj_has_state(ui_Heating,LV_STATE_CHECKED)) {
-    int t=lv_spinbox_get_value(ui_Temp);
     Serial.print("Temp value ");
-    Serial.println(t);
-    double value=(double)t/10;
+    Serial.println(temperature);
+    double value=(double)temperature/10;
     Serial.print("Sending temperature setpoint ");
     Serial.println(value,1);
     mqttClient.publish("truma/set/temp", String(value,1),0,true);
@@ -481,7 +500,8 @@ void callback(const String& topic, const String& payload) {
        EnableFan();
     } else {
        lv_obj_add_state(ui_Heating,LV_STATE_CHECKED);
-       lv_spinbox_set_value(ui_Temp, temp*10);
+       temperature=temp*10;
+       ShowTemperature();
        EnableFanSpeed(false);
        EnableFan();
     }
@@ -527,14 +547,14 @@ void ResetError(lv_event_t * e) {
 void ChangeTemp(int increment) {
   tempchanged=true;
   tempdelay=millis();
-  int temp=lv_spinbox_get_value(ui_Temp)+increment;
-  if (temp<50) {
-    temp=50;
+  temperature=temperature+increment;
+  if (temperature<50) {
+    temperature=50;
   }
-  if (temp>300) {
-    temp=300;
+  if (temperature>300) {
+    temperature=300;
   }
-  lv_spinbox_set_value(ui_Temp,temp);
+  ShowTemperature();
 }
 
 //Button + clicked or long pressed (repeat)
@@ -547,6 +567,16 @@ void IncrTemperature(lv_event_t * e) {
 void DecrTemperature(lv_event_t * e) {
   Serial.println("DecrTemperature");
   ChangeTemp(-1);
+}
+
+//click on the temperature, show the keyboard
+void TemperatureClick(lv_event_t * e) {
+  osk->TemperatureClick(e);
+}
+
+//click on the keyboard
+void KeyboardClick(lv_event_t * e) {
+  osk->KeyboardClick(e);
 }
 
 //Boiler selection changed
