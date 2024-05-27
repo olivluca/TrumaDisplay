@@ -8,6 +8,7 @@
 #include "errtext.h"
 #include "osk.hpp"
 #include <ArduinoOTA.h>
+#include <esp_task_wdt.h>
 
 //------ you should create your own wifi.h with
 //#define WLAN_SSID "your_ssid"
@@ -288,6 +289,7 @@ void setup() {
       })
       .onProgress([](unsigned int progress, unsigned int total) {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+        esp_task_wdt_reset();
       })
       .onError([](ota_error_t error) {
         inota=false;
@@ -298,7 +300,8 @@ void setup() {
         else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
         else if (error == OTA_END_ERROR) Serial.println("End Failed");
       });
-
+  esp_task_wdt_init(5,true);
+  esp_task_wdt_add(NULL);    
 }
 
 //Sends the temperature setting to the broker
@@ -400,7 +403,7 @@ void loop() {
   }
 
   lv_timer_handler();
-
+  esp_task_wdt_reset();
   //just because
   delay(10);
 }
