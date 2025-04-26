@@ -1,8 +1,9 @@
 #include "osk.hpp"
 #include <stdlib.h>
+#include <string.h>
 
 
-typedef enum buttons {btBackspace, btOk, btCancel ,bt1, bt2, bt3, bt4, bt5, bt6, bt7, bt8, bt9, bt0, btDecimal};
+enum buttons {btBackspace, btOk, btCancel ,bt1, bt2, bt3, bt4, bt5, bt6, bt7, bt8, bt9, bt0, btDecimal};
 
 
 const char * KeyMap[] = {LV_SYMBOL_BACKSPACE,LV_SYMBOL_OK,LV_SYMBOL_CLOSE,"\n",
@@ -20,22 +21,22 @@ TOsk::TOsk(lv_obj_t *keyboard, lv_obj_t *tempTextarea, lv_obj_t *btnIncrement, l
   FBtnDecrement=btnDecrement;  
   FSetTemperature=setTemperature;  
   FCancelCallback=cancelCallback;
-  const lv_btnmatrix_ctrl_t ctrl_map[]={1}; //dummy, EnableKeybButtons will do the real thing
+  const lv_buttonmatrix_ctrl_t ctrl_map[]={(lv_buttonmatrix_ctrl_t)1}; //dummy width, EnableKeybButtons will do the real thing
   lv_keyboard_set_map(FKeyboard, LV_KEYBOARD_MODE_NUMBER, KeyMap,ctrl_map);
 }
 
-#define ENABLED LV_BTNMATRIX_CTRL_NO_REPEAT | LV_BTNMATRIX_CTRL_CLICK_TRIG
-#define DISABLED ENABLED | LV_BTNMATRIX_CTRL_DISABLED
-#define ENABLED1 ENABLED | 1
-#define DISABLED1 DISABLED | 1
+#define ENABLED (lv_buttonmatrix_ctrl_t)(LV_BTNMATRIX_CTRL_NO_REPEAT | LV_BTNMATRIX_CTRL_CLICK_TRIG)
+#define DISABLED (lv_buttonmatrix_ctrl_t)(ENABLED | LV_BTNMATRIX_CTRL_DISABLED)
+#define ENABLED_WIDTH_1 (lv_buttonmatrix_ctrl_t)(ENABLED | 1)
+#define DISABLED_WIDTH_1 (lv_buttonmatrix_ctrl_t)(DISABLED | 1)
 bool TOsk::EnableKeybButtons()
 {     
-    lv_btnmatrix_ctrl_t KeybFlags[14];
+    lv_buttonmatrix_ctrl_t KeybFlags[14];
       //backspace enabled with at least one input
       if (FTempIndex>0) {
-        KeybFlags[btBackspace]=ENABLED1;
+        KeybFlags[btBackspace]=ENABLED_WIDTH_1;
       } else {
-        KeybFlags[btBackspace]=DISABLED1;
+        KeybFlags[btBackspace]=DISABLED_WIDTH_1;
       }
 
       //ok
@@ -45,11 +46,11 @@ bool TOsk::EnableKeybButtons()
         okenabled=newtemp>=5.0 && newtemp<=30.0;
       }
       if (okenabled) {
-        KeybFlags[btOk]=ENABLED1;
+        KeybFlags[btOk]=ENABLED_WIDTH_1;
      } else {
-        KeybFlags[btOk]=DISABLED1;
+        KeybFlags[btOk]=DISABLED_WIDTH_1;
       }
-      KeybFlags[btCancel]=ENABLED1;
+      KeybFlags[btCancel]=ENABLED_WIDTH_1;
 
       char *dec=strchr(FTempIntro,'.');
       int maxindex;
@@ -63,18 +64,18 @@ bool TOsk::EnableKeybButtons()
       for (int i=bt1; i<=bt0; i++) {
         if (i==bt0) w=2;
         if (FTempIndex<=maxindex) {
-          KeybFlags[i]=ENABLED | w;
+          KeybFlags[i]=(lv_buttonmatrix_ctrl_t)(ENABLED | w);
         } else {
-          KeybFlags[i]=DISABLED | w;
+          KeybFlags[i]=(lv_buttonmatrix_ctrl_t) (DISABLED | w);
         }
       }
       //decimal point
       if (dec==NULL && FTempIndex>0) {
-        KeybFlags[btDecimal]=ENABLED1;
+        KeybFlags[btDecimal]=ENABLED_WIDTH_1;
       } else  {
-        KeybFlags[btDecimal]=DISABLED1;
+        KeybFlags[btDecimal]=DISABLED_WIDTH_1;
       }
-    lv_btnmatrix_set_ctrl_map(FKeyboard, KeybFlags);
+    lv_buttonmatrix_set_ctrl_map(FKeyboard, KeybFlags);
     return FTempIndex<=maxindex;
 }
 
@@ -88,7 +89,7 @@ void TOsk::ShowInputTemp()
 
 void TOsk::KeyboardClick(lv_event_t *e)
 {
-  int keyindex = *(int*)e->param;
+  int keyindex = *(int*)lv_event_get_param(e);
   switch(keyindex) {
     case btBackspace: 
         if (FTempIndex>0) {

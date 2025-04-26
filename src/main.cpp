@@ -9,6 +9,8 @@
 #include "osk.hpp"
 #include <ArduinoOTA.h>
 #include <esp_task_wdt.h>
+#include <queue>
+#include <mutex>
 
 //------ you should create your own wifi.h with
 //#define WLAN_SSID "your_ssid"
@@ -19,6 +21,9 @@
 #include "wifi.h"
 
 ESP32MQTTClient  mqttClient;
+
+std::mutex mqttlock;
+std::queue<String> mqttmessages;
 
 boolean mqttok=false;
 boolean linok=true;
@@ -72,9 +77,9 @@ void EnableFan() {
   if (enable!=enabled) {
     if (enable) {
       lv_obj_add_flag(ui_Fan, LV_OBJ_FLAG_CLICKABLE);
-      lv_obj_clear_state(ui_Fan, LV_STATE_DISABLED);
+      lv_obj_remove_state(ui_Fan, LV_STATE_DISABLED);
     } else {
-      lv_obj_clear_flag(ui_Fan, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_remove_flag(ui_Fan, LV_OBJ_FLAG_CLICKABLE);
       lv_obj_add_state(ui_Fan, LV_STATE_DISABLED);
     }
   }
@@ -116,7 +121,7 @@ void Show(lv_obj_t * obj, boolean show) {
   boolean shown=!lv_obj_has_flag(obj,LV_OBJ_FLAG_HIDDEN);
   if (shown!=show) {
     if (show) {
-      lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
     } else {
       lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
     }
@@ -175,7 +180,7 @@ void ShowErrorOrStatus() {
     //only change screen if it wasn't already loaded
     if (!showingError && !screenwasoff) {
       Serial.println("Loading ErrorScreen");
-      lv_scr_load(ui_ErrorScreen);
+      lv_screen_load(ui_ErrorScreen);
     }
     screenwasoff=true; 
     showingError=error; //store that it was an error
@@ -214,7 +219,7 @@ void ShowErrorOrStatus() {
         Serial.println("without clearing data");
       }
       //and load the normal screen
-      lv_scr_load(ui_TrumaMainScreen);
+      lv_screen_load(ui_TrumaMainScreen);
       screenwasoff=false;
       showingError=false;
     }
@@ -225,7 +230,7 @@ void ShowErrorOrStatus() {
 //turn off the backlight, otherwise adjust it with the light sensor
 float BrightnessCallback() {
   float adapt=smartdisplay_lcd_adaptive_brightness_cds();
-  if (lv_disp_get_inactive_time(lv_disp_get_default())>30000 && lv_obj_has_state(ui_ScreenOff, LV_STATE_CHECKED)) {
+  if (lv_disp_get_inactive_time(lv_display_get_default())>30000 && lv_obj_has_state(ui_ScreenOff, LV_STATE_CHECKED)) {
     if (!screenoff) {
       screenoff=true;
       ShowErrorOrStatus();
@@ -253,7 +258,7 @@ void setup() {
   touch_calibration_data=smartdisplay_compute_touch_calibration(screen,touch);
 
    __attribute__((unused)) auto disp = lv_disp_get_default();
-  lv_disp_set_rotation(disp, LV_DISP_ROT_90);
+  lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
   ui_init();
   osk = new TOsk(ui_Keyboard, ui_Temp, ui_btnIncrement, ui_btnDecrement, SetTemperature, ShowTemperature);
   smartdisplay_lcd_set_brightness_cb(BrightnessCallback, 100);  
@@ -290,6 +295,7 @@ void setup() {
       .onProgress([](unsigned int progress, unsigned int total) {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
         esp_task_wdt_reset();
+        delay(1);
       })
       .onError([](ota_error_t error) {
         inota=false;
@@ -352,84 +358,21 @@ void CheckWifi() {
     }
   }
 }
-
-//---------------------------------------------------------------------
-void loop() {
-
-  CheckWifi();
-  if (wifistarted) {
-    ArduinoOTA.handle();
-  }
-
-  //hack to try and fix the missing redraws of the screen
-  //without this hacks, parts of the screen won't be redrawn
-  //showing elements, or parts of element, that shouldn't be there
-  //it works but it slows everything down.
-  //I could use a longer delay, but then the scrolling label
-  //will become jumpy, this way at least the scrolling is 
-  //always slow with no sudden jumps
-  
-  if(millis()-refreshdelay>100) {
-    refreshdelay=millis();
-    lv_obj_invalidate(lv_scr_act());
-  } 
-
-  //keep the truma on with the screen active
-  if (millis()-lastping>10000) {
-    mqttClient.publish("truma/set/ping","1");
-    lastping=millis();
-  }
-  
-  //only send the temperature setpoint after a delay
-  //of the selected temperature change or the switch change
-  if (tempchanged) {
-    if (millis()-tempdelay>1000) {
-      tempchanged=false;
-      SendTemperature();
-    }
-  }
-
-  //keep track of the heartbeat only if the broker is connected 
-  if (!wifistarted || !mqttok) {
-    noheartbeat=false;
-    lastheartbeat=millis();
-  } else {
-    if (!noheartbeat) {
-      if (millis()-lastheartbeat>15000) {
-        noheartbeat=true;
-        ShowErrorOrStatus();
-      }
-    }
-  }
-
-  lv_timer_handler();
-  esp_task_wdt_reset();
-  //just because
-  delay(10);
-}
-
-/* mqtt handling */
-esp_err_t handleMQTT(esp_mqtt_event_handle_t event) {
-  if (event->event_id==MQTT_EVENT_DISCONNECTED || event->event_id == MQTT_EVENT_ERROR) {
-    mqttok=false;
-    ShowErrorOrStatus();
-  } 
-  mqttClient.onEventCallback(event);
-  return ESP_OK;
-}
-
-// message received from the mqtt broker
-void callback(const String& topic, const String& payload) {
-  mqttok=true;
-  ShowErrorOrStatus();
-  Serial.print("Received mqtt message [");
+//handles the mqtt messages in the main thread
+void handleMqttMessages(const String& topic, const String& payload) {
+  Serial.print("handling mqtt topic: ");
   Serial.print(topic);
-  Serial.print("] payload \"");
-  Serial.print(payload);
-  Serial.println("\"");
-  Serial.flush();
+  Serial.print(", payload: ");
+  Serial.println(payload);
+  mqttok=true;
+  if (topic=="connected") {
+    mqttok=true;
+    linok=true;
+    doingreset=false;
+    ShowErrorOrStatus();
+  }
   //statuses
-  if (topic=="truma/status/heartbeat") {
+  else if (topic=="truma/status/heartbeat") {
      if (noheartbeat) {
       noheartbeat=false;
       ShowErrorOrStatus();
@@ -537,15 +480,99 @@ void callback(const String& topic, const String& payload) {
     }
   }
 }
+  
+//---------------------------------------------------------------------
+void loop() {
+
+  CheckWifi();
+  if (wifistarted) {
+    ArduinoOTA.handle();
+  }
+
+  //manages the queue of messages received by the mqtt thread
+  mqttlock.lock();
+  if (!mqttmessages.empty()) {
+    String topic=mqttmessages.front();
+    mqttmessages.pop();
+    String payload=mqttmessages.front();
+    mqttmessages.pop();
+    handleMqttMessages(topic,payload);
+  }
+  mqttlock.unlock();
+
+
+  //keep the truma on with the screen active
+  if (millis()-lastping>10000) {
+    mqttClient.publish("truma/set/ping","1");
+    lastping=millis();
+  }
+  
+  //only send the temperature setpoint after a delay
+  //of the selected temperature change or the switch change
+  if (tempchanged) {
+    if (millis()-tempdelay>1000) {
+      tempchanged=false;
+      SendTemperature();
+    }
+  }
+
+  //keep track of the heartbeat only if the broker is connected 
+  if (!wifistarted || !mqttok) {
+    noheartbeat=false;
+    lastheartbeat=millis();
+  } else {
+    if (!noheartbeat) {
+      if (millis()-lastheartbeat>15000) {
+        noheartbeat=true;
+        ShowErrorOrStatus();
+      }
+    }
+  }
+
+  //Update the ticker
+  static auto lv_last_tick = millis();
+  auto const now = millis();
+  lv_tick_inc(now - lv_last_tick);
+  lv_last_tick = now;
+  //Update the UI
+  lv_timer_handler();
+
+  esp_task_wdt_reset();
+  delay(1);
+}
+
+/* mqtt handling */
+esp_err_t handleMQTT(esp_mqtt_event_handle_t event) {
+  if (event->event_id==MQTT_EVENT_DISCONNECTED || event->event_id == MQTT_EVENT_ERROR) {
+    mqttok=false;
+    //FIXME do_show_error_or_status=true;
+  } 
+  mqttClient.onEventCallback(event);
+  return ESP_OK;
+}
+
+// message received from the mqtt broker
+void callback(const String& topic, const String& payload) {
+  //just queues it for the main thread
+  Serial.print("Received mqtt message [");
+  Serial.print(topic);
+  Serial.print("] payload \"");
+  Serial.print(payload);
+  Serial.println("\"");
+  Serial.flush();
+  mqttlock.lock();
+  mqttmessages.push(topic);
+  mqttmessages.push(payload);
+  mqttlock.unlock();
+}
 
 // connection to the broker established, subscribe to the settings and
 // force publish the next received data
 void onConnectionEstablishedCallback(esp_mqtt_client_handle_t client) {
-  //doforcesend=true;
-  mqttok=true;
-  linok=true;
-  doingreset=false;
-  ShowErrorOrStatus();
+  mqttlock.lock();
+  mqttmessages.push("connected");
+  mqttmessages.push("");
+  mqttlock.unlock();
   mqttClient.subscribe("truma/#", callback);
   RequestRefresh();
 }

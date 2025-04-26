@@ -3,7 +3,6 @@ SET(SOURCES ui_TrumaMainScreen.c
     ui.c
     ui_comp_hook.c
     ui_helpers.c
-    ui_events.c
     fonts/ui_font_Roboto.c
     fonts/ui_font_Roboto38.c)
 
