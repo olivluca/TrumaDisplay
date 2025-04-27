@@ -253,6 +253,7 @@ void setup() {
 
   //hardcoded calibration data obtained touching the top left corner, 
   //top right corner and bottom left corner of the screen
+  //probably using https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/tree/main/Examples/Basics/2-TouchTest
   lv_point_t screen[] = {{.x=0, .y=319}, {.x=0, .y=0}, {.x=239,.y=319}};
   lv_point_t touch[] =  {{.x=15,.y=288}, {.x=17,.y=15},{.x=224,.y=288}};
   touch_calibration_data=smartdisplay_compute_touch_calibration(screen,touch);

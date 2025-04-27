@@ -12,6 +12,8 @@ library.
 
 The UI has been generated with [Squareline studio](https://squareline.io/).
 
+After cloning you'll have to run `git submodule init` and `git submodule update`. 
+
 This software is not provided, endorsed, supported, or sponsored by Truma. It may or may not be working with their products. 
 Please read the [license file](LICENSE), in particular:
 
