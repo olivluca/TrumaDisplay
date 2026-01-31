@@ -312,23 +312,13 @@ void setup() {
 }
 
 //Sends the temperature setting to the broker
-//(either 0.0 if the switch is of or the selected value if it is on)
 void SendTemperature() {
-  if (lv_obj_has_state(ui_Heating,LV_STATE_CHECKED)) {
     Serial.print("Temp value ");
     Serial.println(temperature);
     double value=(double)temperature/10;
     Serial.print("Sending temperature setpoint ");
     Serial.println(value,1);
     mqttClient.publish("truma/set/temp", String(value,1),0,true);
-    EnableFanSpeed(false);
-    EnableFan();
-  } else {
-    Serial.println("Sending 0.0");
-    mqttClient.publish("truma/set/temp", "0.0",0,true);
-    EnableFanSpeed(true);
-    EnableFan();
-  }
 }
 
 //checks and restart the wifi connection
@@ -449,19 +439,22 @@ void handleMqttMessages(const String& topic, const String& payload) {
   }
 
   //setpoints (changed somewhere else and reflected here)
-  else if (topic=="truma/set/temp") {
-    double temp=atof(payload.c_str());
-    if (temp<5.0) {
+  else if (topic=="truma/set/heating") {
+    int heaton=atoi(payload.c_str());
+    if (heaton==0) {
        lv_obj_clear_state(ui_Heating,LV_STATE_CHECKED);
        EnableFanSpeed(true);
        EnableFan();
     } else {
        lv_obj_add_state(ui_Heating,LV_STATE_CHECKED);
-       temperature=temp*10;
-       ShowTemperature();
        EnableFanSpeed(false);
        EnableFan();
     }
+  }
+  else if (topic=="truma/set/temp") {
+    double temp=atof(payload.c_str());
+    temperature=temp*10;
+    ShowTemperature();
   }
   else if (topic=="truma/set/boiler") {
     for (int i=0; i<std::extent<decltype(BoilerValues)>::value; i++) {
@@ -644,7 +637,14 @@ void FanChanged(lv_event_t * e)
 //Heating switch changed
 void HeatingOn(lv_event_t * e)
 {
-  Serial.println("HeatingOn");
-  tempchanged=true;
-  tempdelay=millis();
+  bool heatingon=lv_obj_has_state(ui_Heating,LV_STATE_CHECKED);
+  Serial.print("Heating ");
+  if (heatingon) {
+    Serial.println("On");
+  } else {
+    Serial.println("Off");
+  }
+  mqttClient.publish("truma/set/heating", heatingon ? "1" : "0", 0, true);
+  EnableFanSpeed(!heatingon);
+  EnableFan();
 }
